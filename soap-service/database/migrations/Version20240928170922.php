@@ -21,14 +21,13 @@ final class Version20240928170922 extends AbstractMigration
 
     public function up(Schema $schema): void
     {
-        (new Builder($schema))->create('clients_wallets', function (Table $table) {
+        (new Builder($schema))->create('clients', function (Table $table) {
             $table->increments('id');
             $table->string('document', 20);
-            $table->string('name');
             $table->string('email', 50);
+            $table->string('name');
             $table->string('phone');
             $table->float('balance');
-            $table->timestamps();
 
             $table->unique('email');
             $table->unique('document');
@@ -37,7 +36,7 @@ final class Version20240928170922 extends AbstractMigration
 
     public function down(Schema $schema): void
     {
-        (new Builder($schema))->drop('clients_wallets');
+        (new Builder($schema))->drop('clients');
 
     }
 }
