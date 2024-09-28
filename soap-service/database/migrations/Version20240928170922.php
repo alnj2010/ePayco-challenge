@@ -28,7 +28,8 @@ final class Version20240928170922 extends AbstractMigration
             $table->string('name');
             $table->string('phone');
             $table->float('balance');
-
+            
+            $table->unique('phone');
             $table->unique('email');
             $table->unique('document');
         });

@@ -19,4 +19,5 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::post('/client', [ClientController::class, 'store']);
+Route::post('/register', [ClientController::class, 'register']);
+Route::post('/charge', [ClientController::class, 'charge']);
