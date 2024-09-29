@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Entities\Client;
 use Doctrine\ORM\EntityManagerInterface;
 use Illuminate\Support\Facades\Mail;
@@ -12,19 +11,30 @@ use App\Mail\PurchaseMail;
 
 use Illuminate\Validation\ValidationException;
 
-class ClientController extends Controller
+class ClientController
 {
     protected $em;
     public function __construct(EntityManagerInterface $em)
     {
         $this->em = $em;
     }
-    public function register(Request $request)
+
+    /**
+     * Register a Client
+     *
+     * @param string $document
+     * @param string $email
+     * @param string $phone
+     * @param string $name
+     * @return array{
+     *  success:boolean,
+     *  cod_error:string,
+     *  message_error:string,
+     *  data:string,
+     * }
+     */
+    public function register($document, $email, $phone, $name)
     {
-        $document = $request->document;
-        $email = $request->email;
-        $phone = $request->phone;
-        $name = $request->name;
 
         $validator = Validator::make([
             'document' =>  $document,
@@ -42,7 +52,7 @@ class ClientController extends Controller
             return [
                 'success' => false,
                 'cod_error' => '400',
-                'message_error' => $validator->errors()->getMessages(),
+                'message_error' =>  implode($validator->errors()->getMessages()),
                 'data' => null
             ];
         }
@@ -78,11 +88,22 @@ class ClientController extends Controller
         }
     }
 
-    public function charge(Request $request)
+    /**
+     * Deposit money in a client's wallet
+     *
+     * @param string $document
+     * @param string $phone
+     * @param float $amount
+     * @return array{
+     *  success:boolean,
+     *  cod_error:string,
+     *  message_error:string,
+     *  data:string,
+     * }
+     */
+
+    public function charge($document, $phone, $amount)
     {
-        $document = $request->document;
-        $phone = $request->phone;
-        $amount = $request->amount;
 
         $validator = Validator::make([
             'document' =>  $document,
@@ -98,7 +119,7 @@ class ClientController extends Controller
             return [
                 'success' => false,
                 'cod_error' => '400',
-                'message_error' => $validator->errors()->getMessages(),
+                'message_error' => implode($validator->errors()->getMessages()),
                 'data' => null
             ];
         }
@@ -136,10 +157,20 @@ class ClientController extends Controller
         }
     }
 
-    public function check_balance(Request $request)
+    /**
+     * Check Client's current balance
+     *
+     * @param string $document
+     * @param string $phone
+     * @return array{
+     *  success:boolean,
+     *  cod_error:string,
+     *  message_error:string,
+     *  data:string,
+     * }
+     */
+    public function check_balance($document, $phone)
     {
-        $document = $request->document;
-        $phone = $request->phone;
 
         $validator = Validator::make([
             'document' =>  $document,
@@ -186,11 +217,21 @@ class ClientController extends Controller
         }
     }
 
-    public function purchase(Request $request)
+    /**
+     * Purchase a product
+     *
+     * @param string $document
+     * @param string $phone
+     * @param float $price
+     * @return array{
+     *  success:boolean,
+     *  cod_error:string,
+     *  message_error:string,
+     *  data:string,
+     * }
+     */
+    public function purchase($document, $phone, $price)
     {
-        $document = $request->document;
-        $phone = $request->phone;
-        $price = $request->price;
 
         $validator = Validator::make([
             'document' =>  $document,
@@ -279,9 +320,19 @@ class ClientController extends Controller
         $six_digit_random_number = (string)random_int(100000, 999999);
         return $six_digit_random_number;
     }
-    public function confirm(Request $request)
+    /**
+     * Confirm purchase
+     *
+     * @param string $verify_token
+     * @return array{
+     *  success:boolean,
+     *  cod_error:string,
+     *  message_error:string,
+     *  data:string,
+     * }
+     */
+    public function confirm($verify_token)
     {
-        $verify_token =  $request->query(key: 'verify');
 
         $validator = Validator::make([
             'verify_token' =>  $verify_token,
