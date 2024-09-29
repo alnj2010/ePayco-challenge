@@ -22,3 +22,5 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::post('/register', [ClientController::class, 'register']);
 Route::post('/charge', action: [ClientController::class, 'charge']);
 Route::post('/check', [ClientController::class, 'check_balance']);
+Route::post('/purchase', [ClientController::class, 'purchase']);
+Route::get('/confirm-purchase', [ClientController::class, 'confirm']);

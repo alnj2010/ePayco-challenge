@@ -77,4 +77,16 @@ class Client
     {
         return $this->balance;
     }
+
+    function getEmail()
+    {
+        return $this->email;
+    }
+
+    function getName()
+    {
+        return $this->name;
+    }
+
+    
 }
