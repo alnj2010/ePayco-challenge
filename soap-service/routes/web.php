@@ -14,5 +14,6 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', function () {
+    session()->put('newvalue', 'valuee');
     return view('welcome');
 });

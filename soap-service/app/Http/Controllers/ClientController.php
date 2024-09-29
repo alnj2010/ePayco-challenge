@@ -9,9 +9,8 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Crypt;
 use App\Mail\PurchaseMail;
-use Ramsey\Uuid\Provider\Node\RandomNodeProvider;
-use Ramsey\Uuid\Uuid;
-use Illuminate\Support\Facades\Session;
+
+use Illuminate\Validation\ValidationException;
 
 class ClientController extends Controller
 {
@@ -104,27 +103,8 @@ class ClientController extends Controller
             ];
         }
 
-        $qb = $this->em->createQueryBuilder();
         try {
-            $results = $qb->select('c')
-                ->from('App\Entities\Client', 'c')
-                ->where('c.document = ?0')
-                ->andWhere('c.phone = ?1')
-                ->setParameter(0, $document)
-                ->setParameter(1, $phone)
-                ->getQuery()
-                ->getResult();
-
-            if (count($results) <= 0) {
-                return [
-                    'success' => false,
-                    'cod_error' => '404',
-                    'message_error' => 'Client not found',
-                    'data' => null
-                ];
-            }
-
-            $client = $results[0];
+            $client = $this->getClientByDocumentAndPhone($document, $phone);
 
             $client->addBalance($amount);
 
@@ -138,6 +118,15 @@ class ClientController extends Controller
                 'data' => 'success charge'
             ];
         } catch (\Throwable $th) {
+            if ($th instanceof ValidationException) {
+
+                return [
+                    'success' => false,
+                    'cod_error' => $th->errors()["cod_error"][0],
+                    'message_error' => $th->errors()["message_error"][0],
+                    'data' => null
+                ];
+            }
             return [
                 'success' => false,
                 'cod_error' => '500',
@@ -169,28 +158,8 @@ class ClientController extends Controller
             ];
         }
 
-        $qb = $this->em->createQueryBuilder();
-
         try {
-            $results = $qb->select('c')
-                ->from('App\Entities\Client', 'c')
-                ->where('c.document = ?0')
-                ->andWhere('c.phone = ?1')
-                ->setParameter(0, $document)
-                ->setParameter(1, $phone)
-                ->getQuery()
-                ->getResult();
-
-            if (count($results) <= 0) {
-                return [
-                    'success' => false,
-                    'cod_error' => '404',
-                    'message_error' => 'Client not found',
-                    'data' => null
-                ];
-            }
-
-            $client = $results[0];
+            $client = $this->getClientByDocumentAndPhone($document, $phone);
 
             return [
                 'success' => true,
@@ -199,6 +168,15 @@ class ClientController extends Controller
                 'data' => 'Your balance is ' . $client->getBalance() . '$'
             ];
         } catch (\Throwable $th) {
+            if ($th instanceof ValidationException) {
+
+                return [
+                    'success' => false,
+                    'cod_error' => $th->errors()["cod_error"][0],
+                    'message_error' => $th->errors()["message_error"][0],
+                    'data' => null
+                ];
+            }
             return [
                 'success' => false,
                 'cod_error' => '500',
@@ -234,28 +212,8 @@ class ClientController extends Controller
             ];
         }
 
-        $qb = $this->em->createQueryBuilder();
-
         try {
-            $results = $qb->select('c')
-                ->from('App\Entities\Client', 'c')
-                ->where('c.document = ?0')
-                ->andWhere('c.phone = ?1')
-                ->setParameter(0, $document)
-                ->setParameter(1, $phone)
-                ->getQuery()
-                ->getResult();
-
-            if (count($results) <= 0) {
-                return [
-                    'success' => false,
-                    'cod_error' => '404',
-                    'message_error' => 'Client not found',
-                    'data' => null
-                ];
-            }
-
-            $client = $results[0];
+            $client = $this->getClientByDocumentAndPhone($document, $phone);
 
             $balance = $client->getBalance();
 
@@ -268,15 +226,13 @@ class ClientController extends Controller
                 ];
             }
 
-            $token = $this->create_uuid();
-            session([
-                'token' => $token,
-                'price' => $price,
-                'document' => $document,
-                'phone' => $phone
-            ]);
-            $id = session()->getId();
+            $token = $this->generate_6digit_token();
+            session()->put('token', $token);
+            session()->put('price', $price);
+            session()->put('document', $document);
+            session()->put('phone', $phone);
 
+            $id = session()->getId();
 
             $purchase = [
                 'name' => $client->getName(),
@@ -293,6 +249,15 @@ class ClientController extends Controller
                 'data' => 'Confirmation email has been sent'
             ];
         } catch (\Throwable $th) {
+            if ($th instanceof ValidationException) {
+
+                return [
+                    'success' => false,
+                    'cod_error' => $th->errors()["cod_error"][0],
+                    'message_error' => $th->errors()["message_error"][0],
+                    'data' => null
+                ];
+            }
             return [
                 'success' => false,
                 'cod_error' => '500',
@@ -309,11 +274,10 @@ class ClientController extends Controller
         return $url;
     }
 
-    private function create_uuid()
+    private function generate_6digit_token()
     {
-        $nodeProvider = new RandomNodeProvider();
-        $clockSequence = 16383;
-        return Uuid::uuid1($nodeProvider->getNode(), $clockSequence);
+        $six_digit_random_number = (string)random_int(100000, 999999);
+        return $six_digit_random_number;
     }
     public function confirm(Request $request)
     {
@@ -333,12 +297,42 @@ class ClientController extends Controller
                 'data' => null
             ];
         }
-
-        $payload = $this->verifyToken($verify_token);
-
         try {
-            return $payload;
+            $value = $this->verifyToken($verify_token);
+
+            $client = $this->getClientByDocumentAndPhone($value['document'], $value['phone']);
+            $balance = $client->getBalance();
+
+            if ($balance < $value['price']) {
+                return [
+                    'success' => false,
+                    'cod_error' => '400',
+                    'message_error' => 'Insufficient balance',
+                    'data' => null
+                ];
+            }
+
+            $client->discountProduct($value['price']);
+
+            $this->em->persist($client);
+            $this->em->flush();
+
+            return [
+                'success' => true,
+                'cod_error' => '00',
+                'message_error' => null,
+                'data' => 'purchase success'
+            ];
         } catch (\Throwable $th) {
+            if ($th instanceof ValidationException) {
+
+                return [
+                    'success' => false,
+                    'cod_error' => $th->errors()["cod_error"][0],
+                    'message_error' => $th->errors()["message_error"][0],
+                    'data' => null
+                ];
+            }
             return [
                 'success' => false,
                 'cod_error' => '500',
@@ -348,13 +342,57 @@ class ClientController extends Controller
         }
     }
 
-
-
     private function verifyToken($verifyToken)
     {
-        $decrypt = Crypt::decrypt($verifyToken);
-        return $decrypt;
-        $id = $decrypt["id"];
-        $remote_token = $decrypt["token"];
+        $remote_payload = Crypt::decrypt($verifyToken);
+        $validator = Validator::make($remote_payload, [
+            'id' => 'required',
+            'token' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            throw ValidationException::withMessages(['message_error' => 'Invalid token', 'cod_error' => '400']);
+        }
+
+        $session_payload = unserialize(session()->getHandler()->read($remote_payload["id"]));
+        if (!$session_payload) {
+            throw ValidationException::withMessages(['message_error' => 'Invalid token', 'cod_error' => '400']);
+        }
+        $validator = Validator::make($session_payload, [
+            'price' => 'required',
+            'document' => 'required',
+            'phone' => 'required',
+        ]);
+
+        if ($validator->fails() || $remote_payload["token"] != $session_payload["token"]) {
+            throw ValidationException::withMessages(['message_error' => 'Invalid token', 'cod_error' => '400']);
+        }
+
+        session()->getHandler()->destroy($remote_payload["id"]);
+
+        return [
+            'price' => $session_payload["price"],
+            'document' => $session_payload["document"],
+            'phone' => $session_payload["phone"],
+        ];
+    }
+
+    private function getClientByDocumentAndPhone($document, $phone)
+    {
+        $qb = $this->em->createQueryBuilder();
+
+        $results = $qb->select('c')
+            ->from('App\Entities\Client', 'c')
+            ->where('c.document = ?0')
+            ->andWhere('c.phone = ?1')
+            ->setParameter(0, $document)
+            ->setParameter(1, $phone)
+            ->getQuery()
+            ->getResult();
+
+        if (count($results) <= 0) {
+            throw ValidationException::withMessages(['message_error' => 'Client not found', 'cod_error' => '404']);
+        }
+        return $results[0];
     }
 }

@@ -88,5 +88,8 @@ class Client
         return $this->name;
     }
 
-    
+    function discountProduct($price)
+    {
+        $this->balance -= $price;
+    }
 }
