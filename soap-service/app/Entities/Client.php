@@ -72,4 +72,9 @@ class Client
     {
         $this->balance += $amount;
     }
+
+    function getBalance()
+    {
+        return $this->balance;
+    }
 }

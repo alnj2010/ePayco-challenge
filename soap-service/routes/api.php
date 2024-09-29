@@ -20,4 +20,5 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 Route::post('/register', [ClientController::class, 'register']);
-Route::post('/charge', [ClientController::class, 'charge']);
+Route::post('/charge', action: [ClientController::class, 'charge']);
+Route::post('/check', [ClientController::class, 'check_balance']);

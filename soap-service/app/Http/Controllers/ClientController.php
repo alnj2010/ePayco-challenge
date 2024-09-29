@@ -6,7 +6,6 @@ use Illuminate\Http\Request;
 use App\Entities\Client;
 use Doctrine\ORM\EntityManagerInterface;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\DB;
 
 class ClientController extends Controller
 {
@@ -130,7 +129,70 @@ class ClientController extends Controller
                 'success' => true,
                 'cod_error' => '00',
                 'message_error' => null,
+                'data' => 'success charge'
+            ];
+        } catch (\Throwable $th) {
+            return [
+                'success' => false,
+                'cod_error' => '500',
+                'message_error' => $th->getMessage(),
                 'data' => null
+            ];
+        }
+    }
+
+    public function check_balance(Request $request)
+    {
+        $document = $request->document;
+        $phone = $request->phone;
+        $amount = $request->amount;
+
+        $validator = Validator::make([
+            'document' =>  $document,
+            'phone' => $phone,
+            'amount' => $amount,
+        ], [
+            'document' => 'required',
+            'phone' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            return [
+                'success' => false,
+                'cod_error' => '400',
+                'message_error' => $validator->errors()->getMessages(),
+                'data' => null
+            ];
+        }
+
+        $qb = $this->em->createQueryBuilder();
+        
+        try {
+            $results = $qb->select('c')
+                ->from('App\Entities\Client', 'c')
+                ->where('c.document = ?0')
+                ->andWhere('c.phone = ?1')
+                ->setParameter(0, $document)
+                ->setParameter(1, $phone)
+                ->getQuery()
+                ->getResult();
+
+            if (count($results) <= 0) {
+                return [
+                    'success' => false,
+                    'cod_error' => '404',
+                    'message_error' => 'Client not found',
+                    'data' => null
+                ];
+            }
+
+            $client = $results[0];
+
+            return [
+                'success' => true,
+                'cod_error' => '00',
+                'message_error' => null,
+                'data' => 'Your balance is '.$client->getBalance().'$'
             ];
         } catch (\Throwable $th) {
             return [
