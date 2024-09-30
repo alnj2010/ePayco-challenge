@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Crypt;
 use App\Mail\PurchaseMail;
+use Illuminate\Support\Facades\Log;
 
 use Illuminate\Validation\ValidationException;
 
@@ -35,6 +36,10 @@ class ClientController
      */
     public function register($document, $email, $phone, $name)
     {
+        Log::debug($document);
+        Log::debug($email);
+        Log::debug($phone);
+        Log::debug($name);
 
         $validator = Validator::make([
             'document' =>  $document,
@@ -52,7 +57,7 @@ class ClientController
             return [
                 'success' => false,
                 'cod_error' => '400',
-                'message_error' =>  implode($validator->errors()->getMessages()),
+                'message_error' =>  implode(",",$validator->messages()->all()),
                 'data' => null
             ];
         }
@@ -105,6 +110,10 @@ class ClientController
     public function charge($document, $phone, $amount)
     {
 
+        Log::debug($document);
+        Log::debug($phone);
+        Log::debug($amount);
+
         $validator = Validator::make([
             'document' =>  $document,
             'phone' => $phone,
@@ -119,7 +128,7 @@ class ClientController
             return [
                 'success' => false,
                 'cod_error' => '400',
-                'message_error' => implode($validator->errors()->getMessages()),
+                'message_error' => implode(",",$validator->messages()->all()),
                 'data' => null
             ];
         }
@@ -171,6 +180,8 @@ class ClientController
      */
     public function check_balance($document, $phone)
     {
+        Log::debug($document);
+        Log::debug($phone);
 
         $validator = Validator::make([
             'document' =>  $document,
@@ -184,7 +195,7 @@ class ClientController
             return [
                 'success' => false,
                 'cod_error' => '400',
-                'message_error' => $validator->errors()->getMessages(),
+                'message_error' => implode(",",$validator->messages()->all()),
                 'data' => null
             ];
         }
@@ -232,6 +243,9 @@ class ClientController
      */
     public function purchase($document, $phone, $price)
     {
+        Log::debug($document);
+        Log::debug($price);
+        Log::debug($phone);
 
         $validator = Validator::make([
             'document' =>  $document,
@@ -248,7 +262,7 @@ class ClientController
             return [
                 'success' => false,
                 'cod_error' => '400',
-                'message_error' => $validator->errors()->getMessages(),
+                'message_error' => implode(",",$validator->messages()->all()),
                 'data' => null
             ];
         }
@@ -311,7 +325,7 @@ class ClientController
     {
         $dataToken = ['id' => $id, 'token' => $token];
         $crypted = Crypt::encrypt($dataToken);
-        $url = env('APP_URL') . '/api/confirm-purchase/' . '?verify=' . $crypted;
+        $url = env('REST_APP_VERIFY_URL') . '?verify=' . $crypted;
         return $url;
     }
 
@@ -344,7 +358,7 @@ class ClientController
             return [
                 'success' => false,
                 'cod_error' => '400',
-                'message_error' => $validator->errors()->getMessages(),
+                'message_error' => implode(",",$validator->messages()->all()),
                 'data' => null
             ];
         }
