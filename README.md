@@ -14,21 +14,14 @@
 
 ---
 
-Download zip file and extract it [latest pre-built api release](https://github.com/alnj2010/Regcheq-challenge). Or clone the repository and cd into it.
-
-You must copy the docker env file (`.env.DOCKER`) and rename it to `.env`
-
-```sh
-$ cp .env.DOCKER ./.env
-
-```
+Download zip file and extract it [latest pre-built api release](https://github.com/alnj2010/ePayco-challenge). Or clone the repository and cd into it.
 
 Now we are ready to run the docker-compose command!
 
-Make sure you are in the root of the api release directory and run:
+Make sure you are in the root directory and run:
 
 ```sh
-$ docker-compose up
+$ docker-compose up -d
 
 ```
 
@@ -36,17 +29,24 @@ When the command is ready and the containers running, you can see three instance
 
 | Service   | LOCALHOST:PORT  |
 | --------- | --------------- |
-| `MONGODB` | localhost:27017 |
-| `API`     | localhost:8000  |
+| `SOAP-SERVICE` | localhost:8000 |
+| `REST-SERVICE`     | localhost:3000  |
+| `MySQL`     | localhost:3306  |
 
-The final step is running the database makefile:
+The final step is running the migration
 
 ```sh
-$ make database-provision -C ./regcheq-db/
+$ docker compose exec soap-service-container php artisan doctrine:migrations:migrate
 
 ```
 
-The latter will fill the databse with documents to test.
+### Endpoints
 
-Open http://localhost:8000/api-docs/ to view the apidocs in your browser.
+| METHOD   | ROUTE  |DESCRIPTION| BODY EXAMPLE|
+| --------- | --------------- | --------------- | ---------------|
+| `POST` | /api/register| it registers a new client |`{"document": "12345678","email": "a@email.com","phone": "04345345345","name": "myname"}`|
+| `PUT`     | /api/charge  | it charges balance to client's wallet |`{"document":"12345678","phone": "04345345345","amount": 300}`|
+| `GET`     | /api/check-balance  | it returns the client's balance |`{"document": "12345678","phone": "04345345345"}`|
+| `POST`     | /api/purchase  | it sends confirmation email to client|`{"document": "12345678","phone": "04345345345","price":50}`|
 
+NOTE: the file `epayco-challenge.postman_collection` you contain a postman collection.
