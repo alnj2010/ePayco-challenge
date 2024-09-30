@@ -1,4 +1,14 @@
 services:
+  rest-service-container:
+    image: rest-service
+    build:
+      context: rest-service
+      dockerfile: Dockerfile
+    ports:
+      - 3000:3000
+    env_file: ./rest-service/.env.docker
+    depends_on:
+      - soap-service-container
   soap-service-container:
     image: soap-service
     build:
@@ -20,7 +30,7 @@ services:
     ports:
       - 3306:3306
     healthcheck:
-      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
       retries: 5
       start_period: 30s

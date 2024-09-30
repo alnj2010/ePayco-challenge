@@ -39,7 +39,7 @@ router.post(
         cod_error: '500',
         message_error: error.message,
         data: null
-      });
+      }).status(500);
     }
   });
 
