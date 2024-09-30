@@ -4,6 +4,8 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 
+require('dotenv').config()
+
 var apiRouter = require('./routes/api');
 
 var app = express();

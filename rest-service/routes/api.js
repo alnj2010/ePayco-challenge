@@ -1,107 +1,11 @@
+const { body, validationResult, query } = require('express-validator');
 var express = require('express');
 var router = express.Router();
-const { body, validationResult, query } = require('express-validator');
-const url = `http://soap-service-container:8000/api/soap/wsdl`;
-const soap = require('soap');
-
-async function connect() {
-
-  return new Promise((res, rej) => {
-    soap.createClient(url, function (err, client) {
-      if (err) {
-        rej(err);
-      } else {
-        res(client);
-      }
-    });
-  })
-}
-
-async function register({ document, email, phone, name }) {
-  const client = await connect(url);
-  return new Promise((res, rej) => {
-    client.register({ document, email, phone, name }, function (err, result) {
-      if (err) {
-        rej(err);
-      } else {
-        const response = result.return.item.reduce((acc, item) => {
-          acc[item["key"]["$value"]] = item?.value?.$value;
-          return acc;
-        }, {})
-        res(response);
-      }
-    });
-  })
-}
-
-async function charge({ document, phone, amount }) {
-  const client = await connect(url);
-  return new Promise((res, rej) => {
-    client.charge({ document, phone, amount }, function (err, result) {
-      if (err) {
-        rej(err);
-      } else {
-        const response = result.return.item.reduce((acc, item) => {
-          acc[item["key"]["$value"]] = item?.value?.$value;
-          return acc;
-        }, {})
-        res(response);
-      }
-    });
-  })
-}
-
-async function checkBalance({ document, phone }) {
-  const client = await connect(url);
-  return new Promise((res, rej) => {
-    client.check_balance({ document, phone }, function (err, result) {
-      if (err) {
-        rej(err);
-      } else {
-        const response = result.return.item.reduce((acc, item) => {
-          acc[item["key"]["$value"]] = item?.value?.$value;
-          return acc;
-        }, {})
-        res(response);
-      }
-    });
-  })
-}
-
-async function purchase({ document, phone, price }) {
-  const client = await connect(url);
-  return new Promise((res, rej) => {
-    client.purchase({ document, phone, price }, function (err, result) {
-      if (err) {
-        rej(err);
-      } else {
-        const response = result.return.item.reduce((acc, item) => {
-          acc[item["key"]["$value"]] = item?.value?.$value;
-          return acc;
-        }, {})
-        res(response);
-      }
-    });
-  })
-}
-
-async function confirm({ verify }) {
-  const client = await connect(url);
-  return new Promise((res, rej) => {
-    client.confirm({ verify_token: verify }, function (err, result) {
-      if (err) {
-        rej(err);
-      } else {
-        const response = result.return.item.reduce((acc, item) => {
-          acc[item["key"]["$value"]] = item?.value?.$value;
-          return acc;
-        }, {})
-        res(response);
-      }
-    });
-  })
-}
-
+const register = require("../services/register");
+const charge = require("../services/charge");
+const checkBalance = require("../services/checkBalance");
+const purchase = require("../services/purchase");
+const confirm = require("../services/confirm");
 
 
 router.post(

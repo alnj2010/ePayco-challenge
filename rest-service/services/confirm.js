@@ -1,9 +1,9 @@
 const connect = require('../libs/soap');
 
-module.exports = async function register({ document, email, phone, name }) {
+module.exports = async function confirm({ verify }) {
     const client = await connect();
     return new Promise((res, rej) => {
-        client.register({ document, email, phone, name }, function (err, result) {
+        client.confirm({ verify_token: verify }, function (err, result) {
             if (err) {
                 rej(err);
             } else {
